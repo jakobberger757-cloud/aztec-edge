@@ -258,29 +258,19 @@ def main():
     print("AZTEC EDGE — Add User + Watchlist")
     print("=" * 60)
 
-    name = input("\nYour name: ").strip()
-    email = input("Your email: ").strip()
+    name = "Jakob"
+    email = "Jakobberger757@gmail.com"
 
-    if not name or not email:
-        print("Name and email required.")
-        return
+    raw_names = [
+        "Blackstone",
+        "KKR",
+        "Cortland",
+        "GenNx360",
+        "Ares Management",
+        "Apollo Global Management"
+    ]
 
     user = add_user(name, email)
-
-    print("\nPaste your company names (one per line).")
-    print("When done, type 'DONE' on a new line and press Enter.\n")
-
-    raw_names = []
-    while True:
-        line = input()
-        if line.strip().upper() == "DONE":
-            break
-        if line.strip():
-            raw_names.append(line.strip())
-
-    if not raw_names:
-        print("No companies entered.")
-        return
 
     # Deduplicate input
     raw_names = list(dict.fromkeys(raw_names))  # preserves order
