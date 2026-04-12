@@ -48,6 +48,7 @@ def supabase_request(method, table, params=None, data=None):
 
 def add_user(name, email):
     """Create a user, or return existing one."""
+    email = email.lower()
     existing = supabase_request("GET", "aztec_edge_users", params={
         "email": f"eq.{email}",
         "select": "id,name,email"
@@ -258,17 +259,42 @@ def main():
     print("AZTEC EDGE — Add User + Watchlist")
     print("=" * 60)
 
-    name = "Jakob"
-    email = "Jakobberger757@gmail.com"
+    interactive = os.isatty(0)
 
-    raw_names = [
-        "Blackstone",
-        "KKR",
-        "Cortland",
-        "GenNx360",
-        "Ares Management",
-        "Apollo Global Management"
-    ]
+    if interactive:
+        name = input("\nYour name: ").strip()
+        email = input("Your email: ").strip()
+
+        if not name or not email:
+            print("Name and email required.")
+            return
+
+        print("\nPaste your company names (one per line).")
+        print("When done, type 'DONE' on a new line and press Enter.\n")
+
+        raw_names = []
+        while True:
+            line = input()
+            if line.strip().upper() == "DONE":
+                break
+            if line.strip():
+                raw_names.append(line.strip())
+
+        if not raw_names:
+            print("No companies entered.")
+            return
+    else:
+        print("\n[Headless mode] Using hardcoded seed data.")
+        name = "Jakob"
+        email = "Jakobberger757@gmail.com"
+        raw_names = [
+            "Blackstone",
+            "KKR",
+            "Cortland",
+            "GenNx360",
+            "Ares Management",
+            "Apollo Global Management"
+        ]
 
     user = add_user(name, email)
 
@@ -284,8 +310,10 @@ def main():
         print("Enrichment returned no results. Exiting.")
         return
 
-    # Non-interactive confirmation for Railway seed run
-    confirmed = enriched
+    if interactive:
+        confirmed = confirm_companies(enriched)
+    else:
+        confirmed = enriched
 
     if not confirmed:
         print("\nNo companies confirmed. Exiting.")

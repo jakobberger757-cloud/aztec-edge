@@ -146,6 +146,8 @@ def summarize_company_news(company_name, articles):
     if not articles:
         return []
 
+    cutoff_date = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%d")
+
     articles_text = ""
     for i, article in enumerate(articles, 1):
         articles_text += f"""
@@ -169,7 +171,7 @@ Published: {article.get('published_date', 'Unknown')}
                 "max_tokens": 2000,
                 "messages": [{
                     "role": "user",
-                    "content": f"""Analyze these articles about "{company_name}" (a fund manager / financial services firm).
+                    "content": f"""Analyze these articles about "{company_name}" (a fund manager / financial services firm). You are helping a business development team at a fund administration company identify actionable sales intelligence.
 
 For each article that is ACTUALLY about this specific company (not a different company with a similar name), provide:
 1. signal_type: one of [fundraise, leadership_change, deal_activity, hiring, press_release, new_fund, regulatory, new_office, strategy, ma_activity]
@@ -179,12 +181,15 @@ For each article that is ACTUALLY about this specific company (not a different c
 5. source: the publication name
 6. published_date: the article's publish date in ISO 8601 format (e.g., "2026-04-07T00:00:00Z"). Use the date from the article metadata. If unknown, use null.
 7. relevance: "high" if definitely about this company, "low" if uncertain
+8. aztec_angle: one sentence explaining why this news matters for a fund administration BD team. Think about: Does this signal a potential need for new fund admin services? Could this mean they're launching a new fund that needs an administrator? Is there a leadership change that creates an opening for a new relationship? Is there regulatory pressure that increases their need for compliance support? If there's no clear BD angle, say "Monitor — no immediate BD trigger."
 
 CRITICAL: Filter out articles that are NOT about this specific fund manager. For example, if the company is "Halifax Group" (a PE firm), ignore articles about Halifax, Nova Scotia.
 
+RECENCY FILTER: Only include articles published within the last 7 days (since {cutoff_date}). If an article's published date is before this cutoff, or if the article describes events that clearly happened months or years ago, exclude it entirely regardless of relevance. When in doubt about the date, exclude it.
+
 Respond ONLY with a JSON array. No other text. Example:
 [
-  {{"signal_type": "fundraise", "summary": "Filed Form D for new $500M credit vehicle.", "title": "...", "url": "...", "source": "PE Hub", "relevance": "high"}}
+  {{"signal_type": "fundraise", "summary": "Filed Form D for new $500M credit vehicle.", "title": "...", "url": "...", "source": "PE Hub", "published_date": "2026-04-07T00:00:00Z", "relevance": "high", "aztec_angle": "New $500M vehicle will need a fund administrator — strong BD trigger to reach out now before they lock in a provider."}}
 ]
 
 If no articles are relevant, respond with: []
@@ -242,6 +247,10 @@ def build_digest_html(user_name, company_results, total_monitored):
             continue
         articles_html = ""
         for article in result["articles"]:
+            aztec_angle = article.get("aztec_angle", "")
+            angle_html = ""
+            if aztec_angle:
+                angle_html = f'<div style="font-size:13px;color:#8B6914;font-style:italic;margin-top:4px;">🎯 {aztec_angle}</div>'
             articles_html += f'''
             <div style="margin-bottom:10px;padding-left:12px;border-left:2px solid #C8A84E;">
                 <div style="margin-bottom:4px;">
@@ -249,6 +258,7 @@ def build_digest_html(user_name, company_results, total_monitored):
                     <span style="font-size:11px;color:#999;font-family:monospace;margin-left:8px;">via {article.get("source", "Unknown")}</span>
                 </div>
                 <div style="font-size:14px;color:#333;line-height:1.5;">{article.get("summary", "")}</div>
+                {angle_html}
                 <a href="{article.get("url", "#")}" style="font-size:12px;color:#C8A84E;text-decoration:none;font-family:monospace;">Read more →</a>
             </div>'''
 
