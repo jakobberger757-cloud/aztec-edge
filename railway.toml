@@ -1,0 +1,6 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+# Run every Monday at 8:00 UTC (3:00 AM EST)
+cronSchedule = "0 8 * * 1"
