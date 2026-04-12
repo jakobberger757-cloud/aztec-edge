@@ -284,8 +284,8 @@ def main():
         print("Enrichment returned no results. Exiting.")
         return
 
-    # Interactive confirmation
-    confirmed = confirm_companies(enriched)
+    # Non-interactive confirmation for Railway seed run
+    confirmed = enriched
 
     if not confirmed:
         print("\nNo companies confirmed. Exiting.")
